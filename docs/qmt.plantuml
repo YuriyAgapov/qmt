@@ -1,0 +1,165 @@
+@startuml
+
+namespace Core {
+    interface Property {
+        +Variant attribute(String) const
+        +void setAttribute(String name, Variant value)
+    }
+
+    interface Type {
+        +Property property(String name) const
+        +StringList propertyNames() const
+    }
+    Type --> Property
+
+    interface Entity {
+        +Type type() const
+    }
+    Entity --> Type
+
+    interface ObjectEntity {
+        +Varinat property(String name) const
+        +bool setProperty(String name, Varinat value) const
+        size_t propertyCount() const
+    }
+    ObjectEntity --|> Entity
+
+    interface TableEntity {
+        +Varinat value(int col, int row) const
+        +bool setValue(int col, int row, Varinat value) const
+        size_t rowCount() const
+        size_t columnCount() const
+    }
+    TableEntity --|> Entity
+}
+
+namespace ItemView {
+    interface EntityModel {
+    }
+
+    class ObjectEntityModel {
+        +Core.ObjectEntity getEntity() const
+        +void setEntity(Core.ObjectEntity)
+    }
+    ObjectEntityModel --|> EntityModel
+    ObjectEntityModel *-- Core.ObjectEntity
+
+    class TableEntityModel {
+        +Core.TableEntity getEntity() const
+        +void setEntity(Core.TableEntity)
+    }
+    TableEntityModel --|> EntityModel
+    TableEntityModel *-- Core.TableEntity
+
+    interface DeleagteSettings {
+        + bool enabled() const
+    }
+
+    interface EntityDeleagteSettings {
+        + DeleagteSettings settings(Property property)
+    }
+
+    interface Deleagte {
+        + QWidget* createEditor(String type, Variant value, DeleagteSettings settings) const
+        + StringList supportedTypes() const
+        + void paint(QPainter* painter, String type, Variant value, DeleagteSettings settings) const
+    }
+
+    class ItemDelegate {
+        + void addDelegate(Deleagte)
+        + void paint(QPainter* painter) const
+        - Deleagte delegate(String type) const
+        - hash<String, Deleagte> delegates;
+        - EntityDeleagteSettings settings;
+    }
+    ItemDelegate --|> QItemDelegate
+    ItemDelegate --> QItemDelegate
+}
+
+namespace ItemViewsControls {
+    class TextDeleagteSettings {
+        bool multiLines() const
+        String emptyText() const
+    }
+    TextDeleagteSettings --|> ItemViews.DeleagteSettings
+
+    class TextDeleagte {
+    }
+    TextDeleagte --|> ItemDelegate
+    TextDeleagte --> TextDeleagteSettings : get edit properties
+
+    class NumberDeleagteSettings {
+        int precision() const
+        double min() const
+        double max() const
+        double step() const
+        String prefix() const
+        String suffix() const
+    }
+    NumberDeleagteSettings --|> ItemViews.DeleagteSettings
+
+    class NumberDeleagte {
+    }
+    NumberDeleagte --|> ItemDelegate
+    NumberDeleagte --> NumberDeleagteSettings : get edit properties
+}
+
+namespace Mem {
+    class Property {
+        -hash<String, Variant> attributes
+    }
+    Property --|> Core.Property
+
+    class Type {
+        -hash<String, Property> properties
+    }
+    Type --|> Core.Type
+
+    class TypeBuilder {
+        +Property addProperty(String, String)
+        +Type type() const
+        -Type type
+    }
+    class ObjectEntity {
+        +setType(Core.Type type)
+        -hash<String, Variant> properties;
+    }
+    ObjectEntity --|> Core.ObjectEntity
+
+    class TableEntity {
+        +setType(Core.Type type)
+        -vector<vector<Variant>> values
+    }
+    TableEntity --|> Core.TableEntity
+}
+
+namespace Bind {
+    class Property<ClassType, ValueType> {
+        + read(ClassType& object, ValueType& value) const
+        + write(ClassType& object, ValueType& value) const
+        - MemberPtr member
+    }
+    Property --|> Mem.Property
+
+    class Type {
+        -const hash<String, Property> properties
+    }
+    Type --|> Core.Type
+
+    class ObjectEntity<ClassType> {
+        +setType(Type type)
+        +setObject(ClassType& object)
+        -const Type& type
+        -ClassType& object
+    }
+    ObjectEntity --|> Core.ObjectEntity
+
+    class TableEntity<ClassType> {
+        +setType(Type type)
+        +setObjects(vector<ClassType> objects)
+        -const Type& type
+        -vector<ClassType> object
+    }
+    TableEntity --|> Core.TableEntity
+}
+@enduml
